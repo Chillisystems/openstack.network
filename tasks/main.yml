@@ -1,0 +1,39 @@
+---
+# TODO:
+#  - Make sure this file can use variables properly.
+#  - Consider using hosts:localhost, connection: local in parent playbook
+#  - Create keypair
+#
+- name: Create openstack networks
+  os_network:
+    cloud: "{{ openstack_cloud | default(omit) }}"
+    auth: "{{ openstack_auth | default(omit) }}"
+    verify: "{{ openstack_ssl_verify | default(true) }}"
+    admin_state_up: true
+    external: false
+    shared: false
+    name: '{{ item.name }}'
+    provider_network_type: vlan
+    provider_physical_network: physnet1
+    provider_segmentation_id: '{{ item.vlan_id }}'
+    state: present
+  when: openstack_nets is defined
+  with_items:
+    - '{{ openstack_nets }}'
+
+- name: Create openstack subnets for networks
+  os_subnet:
+    cloud: "{{ openstack_cloud | default(omit) }}"
+    auth: "{{ openstack_auth | default(omit) }}"
+    verify: "{{ openstack_ssl_verify | default(true) }}"
+    enable_dhcp: true
+    name: '{{ item.name }}'
+    network_name: '{{ item.name }}'
+    cidr: '{{ item.cidr }}'
+    dns_nameservers: '{{ item.dns | default(omit) }}'
+    gateway_ip: '{{ item.gw }}'
+    allocation_pool_start: '{{ item.pool_start }}'
+    allocation_pool_end: '{{ item.pool_end }}'
+  when: openstack_nets is defined
+  with_items:
+    - '{{ openstack_nets }}'
